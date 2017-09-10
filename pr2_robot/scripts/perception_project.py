@@ -50,7 +50,6 @@ def pcl_callback(pcl_msg):
 
     # Convert ROS msg to PCL data
     pcl_data = ros_to_pcl(pcl_msg)
-    rospy.loginfo('Number of points in raw cloud: {}'.format(pcl_data.width))
 
     # Statistical Outlier Filtering
     outlier_filter = pcl_data.make_statistical_outlier_filter()
@@ -58,14 +57,12 @@ def pcl_callback(pcl_msg):
     x = 1.0
     outlier_filter.set_std_dev_mul_thresh(x)
     cloud_filtered = outlier_filter.filter()
-    rospy.loginfo('Number of points after statistical outlier filtering: {}'.format(cloud_filtered.width))
 
     # Voxel Grid Downsampling
     vox = cloud_filtered.make_voxel_grid_filter()
     LEAF_SIZE = 0.01
     vox.set_leaf_size(LEAF_SIZE, LEAF_SIZE, LEAF_SIZE)
     cloud_filtered = vox.filter()
-    rospy.loginfo('Number of points after downsampling: {}'.format(cloud_filtered.width))
 
     # PassThrough Filter
     passthrough = cloud_filtered.make_passthrough_filter()
@@ -82,7 +79,6 @@ def pcl_callback(pcl_msg):
     axis_max = 1.3
     passthrough.set_filter_limits(axis_min, axis_max)
     cloud_filtered = passthrough.filter()
-    rospy.loginfo('Number of points after passthrough filtering: {}'.format(cloud_filtered.width))
 
     # RANSAC Plane Segmentation
     seg = cloud_filtered.make_segmenter()
@@ -96,7 +92,6 @@ def pcl_callback(pcl_msg):
     # Extract inliers and outliers
     cloud_table = cloud_filtered.extract(inliers, negative=False)
     cloud_objects = cloud_filtered.extract(inliers, negative=True)
-    rospy.loginfo('Number of points in object cloud after segmentation: {}'.format(cloud_table.width))
 
     # Euclidean Clustering
     white_cloud = XYZRGB_to_XYZ(cloud_objects)
@@ -107,7 +102,6 @@ def pcl_callback(pcl_msg):
     ec.set_MaxClusterSize(25000)
     ec.set_SearchMethod(tree)
     cluster_indices = ec.Extract()
-    rospy.loginfo('Number of objects after clustering: {}'.format(len(cluster_indices)))
     
     # Create Cluster-Mask Point Cloud to visualize each cluster separately
     cluster_color = get_color_list(len(cluster_indices))
@@ -118,18 +112,18 @@ def pcl_callback(pcl_msg):
     			white_cloud[indice][1],
     			white_cloud[indice][2],
     			rgb_to_float(cluster_color[j])])
-    cluster_cloud = pcl.PointCloud_PointXYZRGB()
-    cluster_cloud.from_list(color_cluster_point_list)
+    cloud_cluster = pcl.PointCloud_PointXYZRGB()
+    cloud_cluster.from_list(color_cluster_point_list)
 
     # Convert PCL data to ROS messages    
     # ros_table_cloud = pcl_to_ros(cloud_table)
     ros_objects_cloud = pcl_to_ros(cloud_objects)
-    ros_clustered_objects_cloud = pcl_to_ros(cluster_cloud)
+    ros_clusters_cloud = pcl_to_ros(cloud_cluster)
 
     # Publish ROS messages    
     # pcl_table_pub.publish(ros_table_cloud)
     pcl_objects_pub.publish(ros_objects_cloud)
-    pcl_clustered_objects_pub.publish(ros_clustered_objects_cloud)
+    pcl_clusters_pub.publish(ros_clusters_cloud)
     
     detected_objects_list = []
     detected_objects_labels = []
@@ -215,8 +209,9 @@ def pr2_mover(object_list):
         object_centroid = []
         for centroid, label in zip(centroids, labels):
             if label == object_name.data:
-                object_centroid = centroid
-        # Skip to the next object of the pick list, if it is not found in the list of detected objects
+                object_centroid = centroid        
+        # Skip to the next object of the pick list
+        # If the current object cannot be found in the list of detected objects,
         if not object_centroid:
            print "Object %s is not found!"%object_name.data
            continue
@@ -261,7 +256,7 @@ if __name__ == '__main__':
     # Create Publishers    
     # pcl_table_pub = rospy.Publisher("/pcl_table", PointCloud2, queue_size=1)
     pcl_objects_pub = rospy.Publisher("/pcl_cobjects", PointCloud2, queue_size=1)
-    pcl_clustered_objects_pub = rospy.Publisher("/pcl_clustered_objects", PointCloud2, queue_size=1)    
+    pcl_clusters_pub = rospy.Publisher("/pcl_clusters", PointCloud2, queue_size=1)    
     object_markers_pub = rospy.Publisher("/object_markers", Marker, queue_size=1)
     detected_objects_pub = rospy.Publisher("/detected_objects", DetectedObjectsArray, queue_size=1)    
 
