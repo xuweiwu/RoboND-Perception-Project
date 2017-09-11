@@ -27,15 +27,15 @@
 
 [//]: # (Image References)
 
-[image1]: ./misc_images/cm_norm_1.jpg
-[image2]: ./misc_images/cm_norm_2.jpg
-[image3]: ./misc_images/cm_norm_3.jpg
-[image4]: ./misc_images/screenshot_t1_objects.png
-[image5]: ./misc_images/screenshot_t1_objects_clustered.png
-[image6]: ./misc_images/screenshot_t2_objects.png
-[image7]: ./misc_images/screenshot_t2_objects_clustered.png
-[image8]: ./misc_images/screenshot_t3_objects.png
-[image9]: ./misc_images/screenshot_t3_objects_clustered.png
+[image1]: ./misc_images/screenshot_t1_objects.png
+[image2]: ./misc_images/screenshot_t2_objects.png
+[image3]: ./misc_images/screenshot_t3_objects.png
+[image4]: ./misc_images/screenshot_t1_objects_clustered.png
+[image5]: ./misc_images/screenshot_t2_objects_clustered.png
+[image6]: ./misc_images/screenshot_t3_objects_clustered.png
+[image7]: ./misc_images/cm_norm_1.jpg
+[image8]: ./misc_images/cm_norm_2.jpg
+[image9]: ./misc_images/cm_norm_3.jpg
 
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/1067/view) Points 
@@ -53,50 +53,70 @@ You're reading it!
 Filtering and RANSAC plane fitting are implemented in `pr2_robot/scripts/perception_project.py`, line 51 to 94. The resulted point clouds of the objects are published to `/pcl_cobjects` topic, and can be seen from the following screenshots with respect to individual test worlds.
 
 test world 1:
-![alt text][image7]
+![alt text][image1]
 test world 2:
-![alt text][image9]
+![alt text][image2]
 test world 3:
-![alt text][image11]
+![alt text][image3]
 
 #### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.
 
 Euclidean clustering for segmentation is implemented in `pr2_robot/scripts/perception_project.py`, line 96 to 116. The resulted point clouds of the clusters are published to `/pcl_clusters` topic, and can be seen from the following screenshots with respect to individual test worlds. Note that in test world 3 the cluster for glue cannot be found, because most part of it is hidden by the book in the camera view.
 
 test world 1:
-![alt text][image8]
+![alt text][image4]
 test world 2:
-![alt text][image10]
+![alt text][image5]
 test world 3:
-![alt text][image12]
+![alt text][image6]
 
 #### 3. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
 
-Both `compute_color_histograms()` and `compute_normal_histograms()` functions in `sensor_stick/src/sensor_stick/features.py` are completed to extract features of color and normal vectors. 40 sample point clouds are recorded for each object in the individual pick list (see `sensor_stick/scripts/capture_features.py`). The SVMs are then trained using linear kernels (see `sensor_stick/scripts/train_svm.py`). The normalized confusion matrices of the trained models are shown below.
+Both `compute_color_histograms()` and `compute_normal_histograms()` functions in `sensor_stick/src/sensor_stick/features.py` are completed to extract features of color and normal vectors. 40 sample point clouds are recorded for each object in the individual pick lists (see `sensor_stick/scripts/capture_features.py`). The SVMs are then trained using linear kernels (see `sensor_stick/scripts/train_svm.py`). The normalized confusion matrices of the trained models are shown below.
 
 pick list 1:
-![alt text][image7]
-pick list 2:
-![alt text][image9]
-pick list 3:
-![alt text][image11]
 
-Here's | A | Snappy | Table
+order | name | group | dropbox
 --- | --- | --- | ---
-1 | `highlight` | **bold** | 7.41
-2 | a | b | c
-3 | *italic* | text | 403
-4 | 2 | 3 | abcd
+1 | biscuits | green | right
+2 | soap | green | right
+3 | soap2 | red | left
 
+![alt text][image7]
+
+pick list 2:
+ 
+order | name | group | dropbox
+--- | --- | --- | ---
+1 | biscuits | green | right
+2 | soap | green | right
+3 | book | red | left
+4 | soap2 | red | left
+5 | glue | red | left
+
+![alt text][image8]
+
+pick list 3:
+    
+order | name | group | dropbox
+--- | --- | --- | ---
+1 | sticky_notes | red | left
+2 | book | red | left
+3 | snacks | green | right
+4 | biscuits | green | right
+5 | eraser | red | left
+6 | soap2 | green | right
+7 | soap | green | right
+8 | glue | red | left    
+
+![alt text][image9]
 
 ### Pick and Place Setup
 
 #### 1. For all three tabletop setups (`test*.world`), perform object recognition, then read in respective pick list (`pick_list_*.yaml`). Next construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
 
-And here's another image! 
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
+The implemented perception pipeline can correctly identify 100% (3/3) of objects in test world 1, 100% (5/5) in test world 2, and 87.5% (7/8) in test world 3. The output yaml files can be found in `output_results` and the screenshots of label markers in RViz are already shown above.
 
-Spend some time at the end to discuss your code, what techniques you used, what worked and why, where the implementation might fail and how you might improve it if you were going to pursue this project further.  
+### Conclusion
 
-
-
+By using filtering and plane segmaentation techniques, the point clouds of the objects can be successfully extracted from the raw point cloud of the environment. However, this is mainly due to the highly simplified environment model, where the point cloud of the table can be easily filtered out. The Euclidean clustering technique works fine, but it might fail when two objects stay too close to each other, or when an object is hidden behind other objects. One possible solution is to perform object recognition and  update the list of detected objects after finishing a single pick and place task. Another problem is that during the pick and place process the original positions of the objects might be changed due to collisions with the robot arms. This can be overcome by means of publishing an additional point cloud for 3D collision map.
